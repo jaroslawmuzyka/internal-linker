@@ -4,8 +4,50 @@ import numpy as np
 import io
 from collections import defaultdict
 
-# Konfiguracja strony
-st.set_page_config(page_title="AI Internal Linker", page_icon="🔗", layout="wide")
+# 1. Konfiguracja strony (musi być ZAWSZE pierwsza)
+st.set_page_config(page_title="AI Internal Linker", page_icon="🔒", layout="wide")
+
+# --- MODUŁ LOGOWANIA ---
+def check_password():
+    """Zwraca `True` jeśli użytkownik podał poprawne hasło."""
+
+    def password_entered():
+        """Sprawdza czy wpisane hasło zgadza się z tym w sekretach."""
+        if st.session_state["password"] == st.secrets["APP_PASSWORD"]:
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # Nie przechowujemy hasła w postaci tekstowej
+        else:
+            st.session_state["password_correct"] = False
+
+    if "password_correct" not in st.session_state:
+        # Pierwsze uruchomienie, pokaż pole do wpisania hasła
+        st.text_input(
+            "Podaj hasło dostępu:", 
+            type="password", 
+            on_change=password_entered, 
+            key="password"
+        )
+        return False
+    elif not st.session_state["password_correct"]:
+        # Hasło błędne
+        st.text_input(
+            "Podaj hasło dostępu:", 
+            type="password", 
+            on_change=password_entered, 
+            key="password"
+        )
+        st.error("😕 Niepoprawne hasło")
+        return False
+    else:
+        # Hasło poprawne
+        return True
+
+if not check_password():
+    st.stop()  # Zatrzymuje ładowanie reszty aplikacji, jeśli brak autoryzacji
+
+# =========================================================
+# WŁAŚCIWA APLIKACJA (Kod wykonuje się tylko po zalogowaniu)
+# =========================================================
 
 # --- Funkcje pomocnicze ---
 
@@ -204,17 +246,6 @@ if len(segments_data) == num_segments and not has_errors:
                 # Obliczamy podobieństwo WSZYSTKO vs WSZYSTKO dla tej pary segmentów
                 # Wynik to macierz: wiersze = main_urls, kolumny = target_urls
                 sim_matrix = cosine_similarity_matrix(main_vecs, target_vecs)
-                
-                # Dla każdego adresu z Main Segment
-                for idx, source_row in main_segment['df'].iterrows():
-                    # Pobieramy wiersz podobieństw dla tego adresu
-                    # idx może nie odpowiadać indeksowi macierzy jeśli df ma luki w indexie,
-                    # więc bezpieczniej użyć iloc/reset_index, ale tutaj iterujemy po kolei
-                    # Użyjmy licznika pętli
-                    pass 
-
-                # Podejście ziterowane po macierzy jest szybsze
-                # sim_matrix[i] to podobieństwa dla i-tego adresu z main_segment
                 
                 for i in range(len(main_segment['df'])):
                     source_url = main_segment['df'].iloc[i]['Address']

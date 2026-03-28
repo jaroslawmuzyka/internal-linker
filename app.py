@@ -163,7 +163,7 @@ with st.expander("Przykład zastosowania:"):
     Klient ma sklep internetowy, w którym mamy kategorie, wpisy blogowe, podział na marki. Chcemy powiązać te segmenty ze sobą linkując do podobnych produktów, adekwatnych wpisów na blogu czy marek. Po wgraniu wymaganych plików dostaniemy gotową strategię linkowania wewnętrznego.
     """)
 
-with st.expander("ℹ️ Instrukcja i format plików"):
+with st.expander("ℹ️ Instrukcja i format plików (tutaj znajdziesz przykładowe pliki!)"):
     st.markdown("""
     ### Co to narzędzie potrafi?
     Wgraj embeddingi z kategorii, marek, bloga. Opcjonalnie wgraj anchory dla każdego z tych adresów URL - dobrane na sztywno np z nagłówka H1 (np nazwa kategorii/bloga) lub z fraz TOP1-TOP20 z Ahrefsa. 

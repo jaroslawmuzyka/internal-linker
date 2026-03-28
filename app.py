@@ -338,7 +338,7 @@ if len(segments_data) == num_segments and not has_errors:
                             anchor_idx = usage_counts[target_url] % len(target_anchors)
                             chosen_anchor = target_anchors[anchor_idx]
                         else:
-                            chosen_anchor = target_row['H1']
+                            chosen_anchor = "BRAK ANCHORA (użyj H1)"
                         
                         # Zwiększamy licznik użycia targetu
                         usage_counts[target_url] += 1
@@ -357,7 +357,7 @@ if len(segments_data) == num_segments and not has_errors:
             # --- Generowanie wyników ---
             results_df = pd.DataFrame(results)
             if not results_df.empty:
-                results_df = results_df.sort_values(by=['URL Źródłowy'], ascending=True)
+                results_df = results_df.sort_values(by=['URL Źródłowy', 'Segment Docelowy', 'Score'], ascending=[True, True, False])
             
             # --- Generowanie nielinkowanych ---
             unlinked_list = list(all_target_urls - linked_target_urls)

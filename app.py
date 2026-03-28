@@ -27,6 +27,7 @@ def check_password():
             on_change=password_entered, 
             key="password"
         )
+        st.info("Dane potrzebne do zalogowania znajdują się w Monday. Kontakt: jaroslaw.muzyka@performance-group.pl")
         return False
     elif not st.session_state["password_correct"]:
         # Hasło błędne
@@ -36,6 +37,7 @@ def check_password():
             on_change=password_entered, 
             key="password"
         )
+        st.info("Dane potrzebne do zalogowania znajdują się w Monday. Kontakt: jaroslaw.muzyka@performance-group.pl")
         st.error("😕 Niepoprawne hasło")
         return False
     else:
@@ -153,16 +155,49 @@ def load_anchors(uploaded_file):
 
 st.title("🔗 AI Internal Linking Strategy")
 st.markdown("""
-To narzędzie generuje strategię linkowania wewnętrznego na podstawie **podobieństwa semantycznego (embeddingów)**.
-Wgraj pliki z segmentami (np. Kategorie, Blog), a AI dobierze najbardziej pasujące podstrony.
+Narzędzie automatyzuje proces linkowania wewnętrznego poprzez analizę podobieństwa semantycznego między podstronami i dopasowanie zdefiniowanych anchorów.
 """)
+
+with st.expander("Przykład zastosowania:"):
+    st.markdown("""
+    Klient ma sklep internetowy, w którym mamy kategorie, wpisy blogowe, podział na marki. Chcemy powiązać te segmenty ze sobą linkując do podobnych produktów, adekwatnych wpisów na blogu czy marek. Po wgraniu wymaganych plików dostaniemy gotową strategię linkowania wewnętrznego.
+    """)
 
 with st.expander("ℹ️ Instrukcja i format plików"):
     st.markdown("""
-    1. **Pliki segmentów (.xlsx):** Muszą zawierać kolumny: `Address`, `Title 1`, `H1-1`, `Extract embeddings`.
-    2. **Plik anchorów (opcjonalny .xlsx):** Kolumny: `URL`, `anchor`.
-    3. **Działanie:** Wybierz segment główny (źródło linków) i segmenty docelowe. System znajdzie najlepsze dopasowania.
+    ### Co to narzędzie potrafi?
+    Wgraj embeddingi z kategorii, marek, bloga. Opcjonalnie wgraj anchory dla każdego z tych adresów URL - dobrane na sztywno np z nagłówka H1 (np nazwa kategorii/bloga) lub z fraz TOP1-TOP20 z Ahrefsa. 
+    Skrypt przygotuje pełną strategie linkowania wewnętrznego wraz z anchorami - wszystko będziesz mógł wyeksportować do XLSX.
+
+    ### Instrukcja:
+    Skrypt na podstawie embeddingów oblicza podobieństwo (**cosine similarity**) pomiędzy stronami w określonych segmentach. Segment to grupa podstron np. kategorie, blog, porady czy rankingi.
+
+    1. **Określ liczbę segmentów** (np. Kategoria, Kategoria do Kategorii, Marki, Blog = 4).
+    2. **Określ liczbę linków wewnętrznych** (np. Po 5 linków per strona).
+    3. **Wgraj pliki z embeddingami** do każdego segmentu z osobna – każdy plik musi zawierać kolumny: `Address` (URL podstrony), `Title 1`, `H1-1`, `Extract embeddings` (pobierzesz ze Screaming Frog).
+    4. **Opcjonalnie wgraj plik z anchorami** z dwiema kolumnami: `URL` oraz `anchor`. Jednemu URL-owi może odpowiadać wiele anchorów.
+
+    Po wczytaniu plików skrypt:
+    * Oblicza **cosine similarity** pomiędzy embeddingami podstron z segmentu głównego a pozostałymi.
+    * Dla każdego URL z segmentu głównego wybiera najlepsze propozycje linkowania.
+    * Anchor dla linku dobierany jest z pliku, który załadujemy do skryptu.
     """)
+
+    st.markdown("### Pobierz przykładowe pliki:")
+    col_dl1, col_dl2, col_dl3, col_dl4 = st.columns(4)
+    
+    try:
+        def get_binary_file_downloader_html(bin_file, file_label='File'):
+            with open(bin_file, 'rb') as f:
+                data = f.read()
+            return data
+
+        col_dl1.download_button("Pobierz przykładowy plik (kategorie)", get_binary_file_downloader_html("kategorie.xlsx"), "kategorie.xlsx")
+        col_dl2.download_button("Pobierz przykładowy plik (brandy)", get_binary_file_downloader_html("brandy.xlsx"), "brandy.xlsx")
+        col_dl3.download_button("Pobierz przykładowy plik (blogi)", get_binary_file_downloader_html("blogi.xlsx"), "blogi.xlsx")
+        col_dl4.download_button("Pobierz przykładowy plik (anchory)", get_binary_file_downloader_html("anchory.xlsx"), "anchory.xlsx")
+    except FileNotFoundError:
+        st.warning("Nie znaleziono plików przykładowych w katalogu głównym.")
 
 # --- Krok 1: Konfiguracja ---
 
@@ -199,6 +234,31 @@ for i in range(num_segments):
 
 st.subheader("⚓ Anchory (Opcjonalne)")
 anchor_file = st.file_uploader("Plik z anchorami (.xlsx)", type=['xlsx'])
+
+with st.expander("📖 Przypisywanie anchorów – przykład"):
+    st.markdown("""
+    Możesz uzupełnić wszystkie adresy URL konkretnym anchorem (np główną frazą lub nagłówkiem H1 linkowanego adresu) i dodatkowo dokleić wszystkie słowa kluczowe TOP1-TOP20 z Ahrefs dla tych adresów.
+
+    Załóżmy, że w pliku **anchory.xlsx** znajdują się następujące dane:
+    | URL | anchor |
+    | :--- | :--- |
+    | link1 | anchor1 |
+    | link2 | anchor2 |
+    | link3 | anchor3 |
+    | link1 | anchor4 |
+    | link1 | anchor5 |
+
+    Dla adresu **link1** mamy więc 3 anchory: *anchor1*, *anchor4*, *anchor5*.
+
+    Jeśli skrypt zaproponuje 5 linków prowadzących do **link1**, przypisze anchory w kolejności:
+    1. anchor1
+    2. anchor4
+    3. anchor5
+    4. anchor1 (wracamy do początku)
+    5. anchor4
+
+    W ten sposób masz pełną kontrolę nad tym, jakie anchory są przypisywane do każdego linku, a ich użycie jest maksymalnie zróżnicowane.
+    """)
 anchors_map = {}
 if anchor_file:
     a_map, a_err = load_anchors(anchor_file)
